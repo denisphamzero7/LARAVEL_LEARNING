@@ -3,19 +3,61 @@ namespace Modules;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\File;
 use Modules\user\src\http\Middlewares\DemoMiddleware;
+
 class ModuleServiceProvider extends ServiceProvider{
+    private $middlewares = [
+        'demo' => DemoMiddleware::class
+    ];
+
     public function boot()
     {
-         $directories = array_map('basename', File::directories(__DIR__));
-
-         if(!empty( $directories)) {
-             foreach ($directories as $directory) {
+        $module = $this->getDirectoriesModules();
+         if(!empty( $module)) {
+             foreach ($module as $directory) {
                 $this->registerModule($directory);
              }
          }
-
     }
-    public function registerModule($module){
+   
+    public function register()
+    {
+         $modules = $this->getDirectoriesModules();
+         if(!empty( $modules)) {
+             foreach ($modules as $module) {
+                $this->registerConfig($module);
+             }
+         }
+         //middleware
+         $this->registerMiddleware();
+    }   
+
+    //get modules
+    private function getDirectoriesModules(){
+        return array_map('basename', File::directories(__DIR__));
+    }
+
+    private function registerConfig($module){
+          $configPath= __DIR__.'/'. $module.'/config';
+          if(File::exists($configPath)) {
+              $configFiles=array_map('basename', File::files($configPath));
+              foreach($configFiles as $config){
+                 $fileName = basename($config, '.php');
+                 $alias = $module . '.' . $fileName; // Tránh trùng lặp config giữa các module
+                 $this->mergeConfigFrom($configPath.'/'.$config, $alias);
+              }
+          }
+    }
+
+    private function registerMiddleware(){
+        if(!empty($this->middlewares)){
+            foreach($this->middlewares as $key=>$middleware){
+                $this->app['router']->aliasMiddleware($key, $middleware);
+            }
+        }
+    }
+
+    //register module
+    private function registerModule($module){
         $modulePath = __DIR__."/{$module}";
         // Khai báo routes
         if(File::exists($modulePath.'/routes/routes.php')) {
@@ -43,33 +85,17 @@ class ModuleServiceProvider extends ServiceProvider{
                 }
             }
         }
-    }
- public function register()
-    {          // dăng kí config
-               $directories = array_map('basename', File::directories(__DIR__));
 
-         if(!empty( $directories)) {
-            //configs
-             foreach ($directories as $directory) {
-                 $configPath= __DIR__.'/'. $directory.'/config';
-                 if(File::exists($configPath)) {
-                     $configFiles=array_map('basename', File::files($configPath));
-                     foreach($configFiles as $config){
-                        $alias = basename($config, '.php');
-                        $this->mergeConfigFrom($configPath.'/'.$config, $alias);
-                     }
-                 }
-             }
-         }
-         //middleware
-         $middlewarePath = [
-            'demo'=>DemoMiddleware::class
-         ];
-
-         if(!empty($middlewarePath)){
-            foreach($middlewarePath as $key=>$middleware){
-                $this->app['router']->aliasMiddleware($key, $middleware);
+        // Tự động đăng ký Commands từ thư mục src/Commands
+        $commandPath = $modulePath . '/src/Commands';
+        if (File::exists($commandPath)) {
+            $commandFiles = File::allFiles($commandPath);
+            foreach ($commandFiles as $file) {
+                $commandClass = 'Modules\\' . $module . '\\src\\Commands\\' . $file->getFilenameWithoutExtension();
+                if (class_exists($commandClass)) {
+                    $this->commands([$commandClass]);
+                }
             }
-         }
+        }
     }
 }
