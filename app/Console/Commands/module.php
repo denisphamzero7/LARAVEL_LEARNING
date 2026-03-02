@@ -19,7 +19,7 @@ class module extends Command
      *
      * @var string
      */
-    protected $description = 'Create a new module structure';
+    protected $description = 'Tạo cấu trúc thư mục và file cho Module mới';
 
     /**
      * Execute the console command.
@@ -28,61 +28,51 @@ class module extends Command
      */
     public function handle()
     {
-        $name = ucfirst($this->argument('name'));
-        $path = base_path('modules/' . $name);
+        $name = $this->argument('name');
+        // Chỉ gọi base_path() 1 lần duy nhất để lấy đường dẫn gốc của module
+        $modulePath = base_path('modules/' . $name);
 
-        if (File::exists($path)) {
-            $this->error('Module ' . $name . ' already exists!');
-            return 0;
+        // 1. Kiểm tra module đã tồn tại chưa
+        if (File::exists($modulePath)) {
+            $this->error('Module này đã tồn tại!');
+            return Command::FAILURE;
         }
 
-        // 1. Create Directories
-        $directories = [
-            $path . '/config',
-            $path . '/helpers',
-            $path . '/migrations',
-            $path . '/resources/lang/en',
-            $path . '/resources/views',
-            $path . '/routes',
-            $path . '/src/Commands',
-            $path . '/src/http/Controllers',
-            $path . '/src/http/Models',
+        // 2. Tạo thư mục gốc cho module
+        File::makeDirectory($modulePath, 0755, true);
+
+        // 3. Tạo các THƯ MỤC con
+        $folders = [
+            'configs', 'routes', 'migrations', 'views', 
+            'helpers', 'commands', 'resources', 'src'
         ];
 
-        foreach ($directories as $directory) {
-            File::makeDirectory($directory, 0755, true);
+        foreach ($folders as $folder) {
+            File::makeDirectory($modulePath . '/' . $folder, 0755, true);
         }
+        $this->info('Đã tạo xong các thư mục con!');
 
-        // 2. Create Boilerplate Files
+        // 4. Tạo các FILE (Dùng File::put thay vì File::makeDirectory)
+        // Cấu trúc: 'đường_dẫn_file' => 'Nội_dung_mặc_định_bên_trong'
+        $files = [
+            'configs/config.php' => "<?php\n\nreturn [];\n",
+            'routes/routes.php' => "<?php\n\nuse Illuminate\Support\Facades\Route;\n\n",
+            'migrations/migrations.php' => "<?php\n\n// Migration file\n",
+            'views/views.php' => "\n",
+            'helpers/helpers.php' => "<?php\n\n// Helper functions\n",
+            'commands/commands.php' => "<?php\n\n// Command file\n",
+            'resources/resources.php' => "<?php\n\n// Resource file\n",
+            'src/src.php' => "<?php\n\n// Source file\n",
+            'composer.json' => "{\n    \"name\": \"module/" . strtolower($name) . "\"\n}\n",
+            'ModuleServiceProvider.php' => "<?php\n\nnamespace Modules\\{$name};\n\nuse Illuminate\\Support\\ServiceProvider;\n\nclass ModuleServiceProvider extends ServiceProvider\n{\n    // \n}\n",
+        ];
 
-        // Config
-        File::put($path . '/config/config.php', "<?php\n\nreturn [\n    'name' => '{$name}'\n];\n");
+        foreach ($files as $filePath => $content) {
+            File::put($modulePath . '/' . $filePath, $content);
+        }
+        $this->info('Đã tạo xong các file cơ bản!');
 
-        // Routes
-        $routeContent = "<?php\n\nuse Illuminate\Support\Facades\Route;\n
-        \nRoute::group(['namespace' => 'Modules\\{$name}\\src\\http\\Controllers'], function () {
-        \n    Route::prefix('" . strtolower($name) . "')->group(function () {
-        \n        Route::get('/', '" . $name . "Controller@index');\n 
-           });\n});\n";
-
-
-        File::put($path . '/routes/routes.php', $routeContent);
-
-        // Controller
-        $controllerContent = "<?php\n\nnamespace Modules\\{$name}\\src\\http\\Controllers;\n\nuse App\\Http\\Controllers\\Controller;\nuse Illuminate\\Http\\Request;\n\nclass {$name}Controller extends Controller\n{\n    public function index()\n    {\n        return view('" . strtolower($name) . "::index');\n    }\n}\n";
-        File::put($path . '/src/http/Controllers/' . $name . 'Controller.php', $controllerContent);
-
-        // Model
-        $modelContent = "<?php\n\nnamespace Modules\\{$name}\\src\\http\\Models;\n\nuse Illuminate\\Database\\Eloquent\\Model;\n\nclass {$name} extends Model\n{\n    protected \$table = '" . strtolower($name) . "s';\n    protected \$fillable = [];\n}\n";
-        File::put($path . '/src/http/Models/' . $name . '.php', $modelContent);
-
-        // View
-        File::put($path . '/resources/views/index.blade.php', "<h1>Welcome to Module {$name}</h1>\n");
-
-        // Lang
-        File::put($path . '/resources/lang/en/custom.php', "<?php\n\nreturn [\n    'welcome' => 'Welcome to module {$name}',\n];\n");
-
-        $this->info("Module {$name} created successfully!");
-        return 0;
+        $this->info("Tạo module [{$name}] thành công rực rỡ!");
+        return Command::SUCCESS;
     }
 }
