@@ -59,7 +59,13 @@ class module extends Command
         File::put($path . '/config/config.php', "<?php\n\nreturn [\n    'name' => '{$name}'\n];\n");
 
         // Routes
-        $routeContent = "<?php\n\nuse Illuminate\Support\Facades\Route;\n\nRoute::group(['namespace' => 'Modules\\{$name}\\src\\http\\Controllers'], function () {\n    Route::prefix('" . strtolower($name) . "')->group(function () {\n        Route::get('/', '" . $name . "Controller@index');\n    });\n});\n";
+        $routeContent = "<?php\n\nuse Illuminate\Support\Facades\Route;\n
+        \nRoute::group(['namespace' => 'Modules\\{$name}\\src\\http\\Controllers'], function () {
+        \n    Route::prefix('" . strtolower($name) . "')->group(function () {
+        \n        Route::get('/', '" . $name . "Controller@index');\n 
+           });\n});\n";
+
+
         File::put($path . '/routes/routes.php', $routeContent);
 
         // Controller
