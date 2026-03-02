@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
+// use Modules\user\src\http\Controllers\UserController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -14,6 +14,15 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('demo')->get('/user', function (Request $request) {
-    return config('user.config.test');
+// Route::middleware('demo')->get('/user', function (Request $request) {
+//     return config('user.config.test');
+// });
+
+// Route::middleware('demo')->get('/user',[UserController::class,'index']);
+
+Route::group(['namespace' => 'Modules\user\src\http\Controllers'], function () {
+    Route::prefix('user')->group(function () {
+        Route::get('/', 'UserController@index');
+        Route::get('/detail/{id}', 'UserController@detail');
+    });
 });
