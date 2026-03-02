@@ -24,5 +24,6 @@ Route::group(['namespace' => 'Modules\user\src\http\Controllers'], function () {
     Route::prefix('user')->group(function () {
         Route::get('/', 'UserController@index');
         Route::get('/detail/{id}', 'UserController@detail');
+        Route::get('/create', 'UserController@create');
     });
 });

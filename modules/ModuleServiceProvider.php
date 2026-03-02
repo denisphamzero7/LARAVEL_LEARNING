@@ -64,8 +64,8 @@ class ModuleServiceProvider extends ServiceProvider{
             $this->loadRoutesFrom($modulePath.'/routes/routes.php');
         }
         // khai báo migrations
-        if(File::exists($modulePath.'/database/migrations')) {
-            $this->loadMigrationsFrom($modulePath.'/database/migrations');
+        if(File::exists($modulePath.'/migrations')) {
+            $this->loadMigrationsFrom($modulePath.'/migrations');
         }
         // Khai báo langs
         if(File::exists($modulePath.'/resources/lang')) {
