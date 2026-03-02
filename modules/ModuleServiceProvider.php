@@ -69,7 +69,7 @@ class ModuleServiceProvider extends ServiceProvider{
         }
         // Khai báo langs
         if(File::exists($modulePath.'/resources/lang')) {
-            $this->loadTranslationsFrom($modulePath.'/resources/lang', $module);
+            $this->loadTranslationsFrom($modulePath.'/resources/lang', strtolower($module));
         }
         // Khai báo views
         if(File::exists($modulePath.'/resources/views')) {
